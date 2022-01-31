@@ -1,8 +1,17 @@
+#arguments are optional, order is important
+#python3 BB84.py True 100
+
 import random
 import numpy as np
+import argparse
 
-n_qubits = 100
-eve_is_listening = False
+parser = argparse.ArgumentParser()
+parser.add_argument('eve_is_listening', type=str, choices=['True', 'False'], nargs='?', default='True')
+parser.add_argument('n_qubits', type=int, nargs='?', default='100')
+args = parser.parse_args()
+
+eve_is_listening = args.eve_is_listening
+n_qubits = args.n_qubits
 
 def gate_choice(): 
     list = np.zeros((2, n_qubits))
@@ -50,7 +59,7 @@ def check(a_list: np.ndarray, b_list: np.ndarray):
             else:
                 print("Be careful! Someone is listening to your conversation.")
                 return True
-    print("\nThe codepad is: ", S)
+    print("The codepad is: ", S)
     return True
 
 Alice_list = gate_choice()
@@ -62,7 +71,7 @@ Alice_list, Bob_list = compare(Alice_list, Bob_list)
 
 Eve_list = measure(Eve_list)
 
-if eve_is_listening:
+if eve_is_listening == 'True':
     Alice:list = eavesdrop(Alice_list, Eve_list)
 
 check(Alice_list, Bob_list)

@@ -1,9 +1,18 @@
+#arguments are optional, order is important
+#python3 BB84.py True 100
+
 from qiskit import *
 import numpy as np
 import random
+import argparse
 
-n_qubits = 100 #number of qubits that Alice sends to Bob
-eve_is_listening = True 
+parser = argparse.ArgumentParser()
+parser.add_argument('eve_is_listening', type=str, choices=['True', 'False'], nargs='?', default='True')
+parser.add_argument('n_qubits', type=int, nargs='?', default=100)
+args = parser.parse_args()
+
+eve_is_listening = args.eve_is_listening
+n_qubits = args.n_qubits 
 
 simulator=Aer.get_backend('statevector_simulator')
 
@@ -18,8 +27,22 @@ def gate_choice():
     return list
 
 #measure in the basis chosen
-def measure(list: int, circuit): 
+def a_measure(list: int, circuit): 
     if list == 0:
+        #measure in the computational basis
+        circuit.measure(0,0)
+    else:
+        #measure in the hadamard basis
+        circuit.h(0)
+        circuit.measure(0,0)
+
+    result=execute(circuit, backend=simulator).result()
+    statevector=result.get_statevector()
+    circuit.initialize(statevector, 0)
+    return int(statevector[0].real)
+
+def b_measure(a_list: int, b_list: int, circuit): 
+    if a_list == b_list:
         #measure in the computational basis
         circuit.measure(0,0)
     else:
@@ -43,7 +66,7 @@ def check(a_list: np.ndarray, b_list: np.ndarray):
             else:
                 print("Be careful! Someone is listening to your conversation.")
                 return True
-    print("\nThe codepad is: ", S)
+    print("The codepad is: ", S)
     return True
 
 #############################
@@ -56,13 +79,12 @@ Eve_list = gate_choice()
 for i in range(0, n_qubits):
     circuit = QuantumCircuit(1,1)
 
-    Alice_list[1][i] = measure(Alice_list[0][i], circuit)
+    Alice_list[1][i] = a_measure(Alice_list[0][i], circuit)
     Alice_old_list[1][i] = Alice_list[1][i]
-    if eve_is_listening:
-        Alice_list[1][i] = measure(Eve_list[0][i], circuit)
+    if eve_is_listening == 'True':
+        Alice_list[1][i] = b_measure(Alice_list[0][i], Eve_list[0][i], circuit)
         Eve_list[1][i] = Alice_list[1][i]
-    
-    Bob_list[1][i] = measure(Bob_list[0][i], circuit)
+    Bob_list[1][i] = b_measure(Alice_list[0][i], Bob_list[0][i], circuit)
 
 check(Alice_list, Bob_list)
 
